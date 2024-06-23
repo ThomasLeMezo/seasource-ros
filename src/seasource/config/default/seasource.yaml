@@ -1,0 +1,13 @@
+gpsd_node:
+  ros__parameters:
+    frame_id: "gps"
+
+xbee_node:
+  ros__parameters:
+    loop_dt: 100 #ms
+
+seasource_audio_node:
+  ros__parameters:
+    sound_duration_between_play: 10000 #ms
+    sound_phase_shift_from_posix: 0 #ms
+

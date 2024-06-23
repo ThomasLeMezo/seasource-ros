@@ -1,0 +1,21 @@
+# sudo systemctl daemon-reload
+# sudo systemctl enable seasource.service
+# View Logs
+# journalctl -u seasource.service
+
+[Unit]
+Description= Launch seasource algorithms
+After=multi-user.target
+After=network-online.target
+Requires=network-online.target
+
+[Service]
+#ExecStartPre=/bin/sleep 15
+User=pi
+Group=pi
+UMask=022
+ExecStart=/bin/zsh -c "source /home/pi/seasource-ros/install/seasource/share/seasource/linux/source-ros.sh && ros2 launch seasource seasource_launch.py"
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target
