@@ -59,10 +59,12 @@ public:
     size_t audio_file_id_default_ = 1;
 
     enum class AudioMode {
-        SINGLE_FILE=0,
-        SEQUENTIAL=1,
+        SINGLE_FILE=1,
+        SEQUENTIAL=2,
     };
     AudioMode audio_mode_ = AudioMode::SINGLE_FILE;
+
+    bool enable_play_ = true;
 
     /// Interfaces
     rclcpp::Publisher<seasource_audio::msg::LogAudioSource>::SharedPtr publisher_log_audio_source_;

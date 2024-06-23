@@ -101,8 +101,12 @@ void SeasourceAudioNode::init_parameters() {
     sound_phase_shift_from_posix_ = std::chrono::milliseconds(this->get_parameter_or("sound_phase_shift_from_posix", sound_phase_shift_from_posix_.count()));
 
     // Verify that sound_phase_shift_from_posix is less than sound_duration_between_play
-    if (sound_phase_shift_from_posix_ >= sound_duration_between_play_) {
+    if (sound_phase_shift_from_posix_ >= sound_duration_between_play_ && sound_duration_between_play_.count() > 0) {
         RCLCPP_ERROR(this->get_logger(), "[seasource_audio_node] sound_phase_shift_from_posix must be less than sound_duration_between_play");
+    }
+
+    if(sound_duration_between_play_.count() == 0){
+        enable_play_ = false;
     }
 
     size_t audio_file_id = audio_file_id_default_;
@@ -158,7 +162,8 @@ void SeasourceAudioNode::init_SDL(){
 }
 
 void SeasourceAudioNode::timer_callback(){
-    play_audio();
+    if(enable_play_)
+        play_audio();
 
     if(audio_mode_ == AudioMode::SEQUENTIAL){
         current_audio_file_ = (current_audio_file_ + 1) % music_.size();
@@ -254,6 +259,10 @@ void SeasourceAudioNode::callback_parameters_update(
 
     if(request->sound_duration_between_play > 0){
         sound_duration_between_play_ = std::chrono::milliseconds(request->sound_duration_between_play);
+        enable_play_ = true;
+    }
+    else{
+        enable_play_ = false;
     }
 
     if(request->sound_phase_shift_from_posix >= 0){
