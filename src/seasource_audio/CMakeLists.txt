@@ -57,6 +57,14 @@ install(TARGETS seasource_audio_node
         DESTINATION lib/${PROJECT_NAME}
 )
 
+# Define a custom target to clear the directory
+set(INSTALL_DATA_DIR "data")
+add_custom_target(clear_install_data_directory
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/data
+        COMMENT "Clearing install directory"
+)
+add_dependencies(seasource_audio_node clear_install_data_directory)
+
 install(
         DIRECTORY data
         DESTINATION lib/${PROJECT_NAME}

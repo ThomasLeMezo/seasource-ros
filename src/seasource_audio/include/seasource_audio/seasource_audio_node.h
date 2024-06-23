@@ -46,13 +46,20 @@ public:
     SDL_AudioDeviceID audioDevice_;
     int sound_volume_ = 128; // Between 0 and 128
 
-    Mix_Chunk* music_ = nullptr; // The music file to play
+    std::vector<Mix_Chunk*> music_; // The music file to play
     bool music_loaded_ = false;
 
     std::string path_data_audio_ = "";
     std::vector<std::string> audio_files_;
 
     size_t current_audio_file_ = 0;
+    size_t audio_file_id_default_ = 1;
+
+    enum class AudioMode {
+        SINGLE_FILE=0,
+        SEQUENTIAL=1,
+    };
+    AudioMode audio_mode_ = AudioMode::SINGLE_FILE;
 
     /// Interfaces
     rclcpp::Publisher<seasource_audio::msg::LogAudioSource>::SharedPtr publisher_log_audio_source_;
@@ -68,9 +75,8 @@ public:
 
     /**
      * Load music file
-     * @param audio_id
      */
-    void load_music(const std::string &audio_id);
+    void load_music();
 
     /**
      * Init SDL

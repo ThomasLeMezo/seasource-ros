@@ -1,0 +1,7 @@
+# Phase shift between the sound and the posix time in ms
+int64 sound_phase_shift_from_posix
+
+# Duration between two sound play in ms
+int64 sound_duration_between_play
+---
+bool success

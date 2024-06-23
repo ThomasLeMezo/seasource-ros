@@ -46,9 +46,6 @@ SeasourceAudioNode::SeasourceAudioNode()
 }
 
 SeasourceAudioNode::~SeasourceAudioNode() {
-    if (music_) {
-        Mix_FreeChunk(music_);
-    }
     Mix_CloseAudio();
     SDL_Quit();
 }
@@ -79,13 +76,12 @@ void SeasourceAudioNode::load_audio_files(){
         RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] audio_file: %s", audio_file.c_str());
     }
 
-
     if (audio_files_.empty()) {
         RCLCPP_ERROR(this->get_logger(), "[seasource_audio_node] No audio files found in %s", path_data_audio_.c_str());
         return;
     }
 
-    load_music(audio_files_[current_audio_file_]);
+    load_music();
 }
 
 void SeasourceAudioNode::init_parameters() {
@@ -100,8 +96,22 @@ void SeasourceAudioNode::init_parameters() {
         RCLCPP_ERROR(this->get_logger(), "[seasource_audio_node] sound_phase_shift_from_posix must be less than sound_duration_between_play");
     }
 
-    this->declare_parameter<int>("audio_file_id", current_audio_file_);
-    current_audio_file_ = this->get_parameter_or("audio_file_id", current_audio_file_);
+    size_t audio_file_id = audio_file_id_default_;
+    this->declare_parameter<int>("audio_file_id", (int)audio_file_id);
+    audio_file_id = this->get_parameter_or("audio_file_id", audio_file_id);
+
+    if(audio_file_id == 0){
+        current_audio_file_ = 0;
+        audio_mode_ = AudioMode::SEQUENTIAL;
+        RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] audio_mode: SEQUENTIAL");
+    }
+    else{
+        current_audio_file_ = audio_file_id-1;
+        audio_mode_ = AudioMode::SINGLE_FILE;
+        RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] audio_mode: SINGLE_FILE");
+    }
+
+    RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] audio_file_id: %d", current_audio_file_);
 
     RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] init_parameters done");
 }
@@ -120,7 +130,7 @@ void SeasourceAudioNode::init_SDL(){
     }
 
     // Initialize SDL2_mixer
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+    if (Mix_OpenAudio(192000, AUDIO_S32LSB, 2, 2048) < 0) {
         printf("SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
         exit(EXIT_FAILURE);
     }
@@ -132,7 +142,7 @@ void SeasourceAudioNode::init_SDL(){
     string command = "amixer -D pulse sset Master unmute";
     system(command.c_str());
 
-    command = "amixer -D pulse sset Master 100%";
+    command = "amixer -D pulse sset Master 20%";
     system(command.c_str());
 
     RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] init_SDL done");
@@ -140,28 +150,45 @@ void SeasourceAudioNode::init_SDL(){
 
 void SeasourceAudioNode::timer_callback(){
     play_audio();
+
+    if(audio_mode_ == AudioMode::SEQUENTIAL){
+        current_audio_file_ = (current_audio_file_ + 1) % music_.size();
+    }
 }
 
-void SeasourceAudioNode::load_music(const std::string &audio_id) {
-    string file = path_data_audio_ + audio_id;
-
-    // Load wav file
-    music_ = Mix_LoadWAV(file.c_str());
-    if (!music_) {
-        printf("Failed to load music! SDL_mixer Error: %s\n", Mix_GetError());
-        return;
+void SeasourceAudioNode::load_music() {
+    for(const auto &audio_file : audio_files_){
+        music_.push_back(nullptr);
     }
-    else{
-        music_loaded_ = true;
+
+    for(size_t index = 0; index<audio_files_.size(); index++){
+        string file = path_data_audio_ + audio_files_[index];
+
+        // Test if file exists
+        if (!filesystem::exists(file)) {
+            RCLCPP_ERROR(this->get_logger(), "[seasource_audio_node] File %s does not exist", file.c_str());
+            return;
+        }
+
+        // Free the previous music
+        if (music_[index]) {
+            Mix_FreeChunk(music_[index]);
+        }
+
+        // Load wav file
+        music_[index] = Mix_LoadWAV(file.c_str());
+        if (!music_[index]) {
+            RCLCPP_ERROR(this->get_logger(), "[seasource_audio_node] Mix_LoadWAV: %s", Mix_GetError());
+        }
     }
 }
 
 void SeasourceAudioNode::play_audio() const {
-    if (!music_loaded_)
-        return;
-
     // Play the music
-    Mix_PlayChannel(-1, music_, 0);
+    if(Mix_PlayChannel(-1, music_[current_audio_file_], 0) == -1) {
+        RCLCPP_ERROR(this->get_logger(), "[seasource_audio_node] Mix_PlayChannel: %s", Mix_GetError());
+        return;
+    }
 
     seasource_audio::msg::LogAudioSource msg;
     msg.header.stamp = this->now();

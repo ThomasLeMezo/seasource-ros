@@ -2,7 +2,7 @@ import numpy as np
 import wave
 import struct
 
-wave_id = 0
+wave_id = 1
 
 def generate_sine_wave(frequency, duration, sample_rate=192000, amplitude=32767):
     t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
