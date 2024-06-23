@@ -17,7 +17,8 @@ using namespace std::placeholders;
 SeasourceAudioNode::SeasourceAudioNode()
         : Node("seasource_audio"){
 
-    timer_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+//    timer_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+//    service_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
     // Default value
 
@@ -27,8 +28,23 @@ SeasourceAudioNode::SeasourceAudioNode()
 
     load_audio_files();
 
+    sync_timer_start();
+
+    RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] Start Ok");
+}
+
+SeasourceAudioNode::~SeasourceAudioNode() {
+    Mix_CloseAudio();
+    SDL_Quit();
+}
+
+void SeasourceAudioNode::sync_timer_start() {
+    if(timer_)
+        timer_->cancel();
+
+    // Change timer duration
     timer_ = this->create_wall_timer(
-            sound_duration_between_play_, std::bind(&SeasourceAudioNode::timer_callback, this), timer_cb_group_);
+            sound_duration_between_play_, std::bind(&SeasourceAudioNode::timer_callback, this));
     timer_->cancel();
 
     // Wait for the next phase shift
@@ -41,13 +57,6 @@ SeasourceAudioNode::SeasourceAudioNode()
     std::this_thread::sleep_for(duration_to_sleep);
     timer_->reset();
     timer_->execute_callback();
-
-    RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] Start Ok");
-}
-
-SeasourceAudioNode::~SeasourceAudioNode() {
-    Mix_CloseAudio();
-    SDL_Quit();
 }
 
 void SeasourceAudioNode::load_audio_files(){
@@ -207,7 +216,53 @@ void SeasourceAudioNode::init_interfaces() {
     publisher_log_audio_source_ = this->create_publisher<seasource_audio::msg::LogAudioSource>(
             "log_audio_source", 10);
 
+    // Service
+    service_file_selection_ = this->create_service<seasource_audio::srv::FileSelection>(
+            "file_selection",
+            std::bind(&SeasourceAudioNode::callback_file_selection, this, _1, _2, _3),
+            rmw_qos_profile_services_default);
+
+    service_parameters_update_ = this->create_service<seasource_audio::srv::ParametersUpdate>(
+            "parameters_update",
+            std::bind(&SeasourceAudioNode::callback_parameters_update, this, _1, _2, _3),
+            rmw_qos_profile_services_default);
+
     RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] init_interfaces done");
+}
+
+void SeasourceAudioNode::callback_file_selection(
+        const std::shared_ptr<rmw_request_id_t> request_header,
+        const std::shared_ptr<seasource_audio::srv::FileSelection::Request> request,
+        const std::shared_ptr<seasource_audio::srv::FileSelection::Response> response) {
+    (void)request_header;
+
+    if(request->audio_file_id < 0 || request->audio_file_id >= (int)music_.size()){
+        RCLCPP_ERROR(this->get_logger(), "[seasource_audio_node] File id %d is out of range", request->audio_file_id);
+        response->success = false;
+        return;
+    }
+
+    current_audio_file_ = request->audio_file_id;
+    response->success = true;
+}
+
+void SeasourceAudioNode::callback_parameters_update(
+        const std::shared_ptr<rmw_request_id_t> request_header,
+        const std::shared_ptr<seasource_audio::srv::ParametersUpdate::Request> request,
+        const std::shared_ptr<seasource_audio::srv::ParametersUpdate::Response> response) {
+    (void)request_header;
+
+    if(request->sound_duration_between_play > 0){
+        sound_duration_between_play_ = std::chrono::milliseconds(request->sound_duration_between_play);
+    }
+
+    if(request->sound_phase_shift_from_posix >= 0){
+        sound_phase_shift_from_posix_ = std::chrono::milliseconds(request->sound_phase_shift_from_posix);
+    }
+
+    sync_timer_start();
+
+    response->success = true;
 }
 
 int main(int argc, char *argv[]) {

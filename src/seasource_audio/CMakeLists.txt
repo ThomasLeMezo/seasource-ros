@@ -17,6 +17,8 @@ find_package(SDL2 CONFIG REQUIRED)
 ## Interfaces
  rosidl_generate_interfaces(${PROJECT_NAME}
          "msg/LogAudioSource.msg"
+         "srv/FileSelection.srv"
+         "srv/ParametersUpdate.srv"
          DEPENDENCIES std_msgs
          )
 

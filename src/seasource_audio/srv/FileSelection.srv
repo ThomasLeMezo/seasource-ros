@@ -1,0 +1,5 @@
+# Audio file selection (if 0 is selected, the audio mode is sequential)
+int32 audio_file_id
+---
+# Response
+bool success

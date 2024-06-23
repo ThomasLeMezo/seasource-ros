@@ -14,6 +14,8 @@
 #include <deque>
 #include <utility>
 #include "seasource_audio/msg/log_audio_source.hpp"
+#include "seasource_audio/srv/file_selection.hpp"
+#include "seasource_audio/srv/parameters_update.hpp"
 
 using namespace std::chrono_literals;
 
@@ -32,7 +34,8 @@ public:
 
 private:
     // rclcpp::CallbackGroup::SharedPtr client_cb_group_;
-    rclcpp::CallbackGroup::SharedPtr timer_cb_group_;
+//    rclcpp::CallbackGroup::SharedPtr timer_cb_group_;
+//    rclcpp::CallbackGroup::SharedPtr service_cb_group_;
 
 public:
 
@@ -63,6 +66,8 @@ public:
 
     /// Interfaces
     rclcpp::Publisher<seasource_audio::msg::LogAudioSource>::SharedPtr publisher_log_audio_source_;
+    rclcpp::Service<seasource_audio::srv::FileSelection>::SharedPtr service_file_selection_;
+    rclcpp::Service<seasource_audio::srv::ParametersUpdate>::SharedPtr service_parameters_update_;
 
     /// Parameters
 
@@ -103,6 +108,15 @@ public:
      */
     void load_audio_files();
 
+    void callback_file_selection(const std::shared_ptr<rmw_request_id_t> request_header,
+                                 const std::shared_ptr<seasource_audio::srv::FileSelection::Request> request,
+                                 const std::shared_ptr<seasource_audio::srv::FileSelection::Response> response);
+
+    void callback_parameters_update(const std::shared_ptr<rmw_request_id_t> request_header,
+                                    const std::shared_ptr<seasource_audio::srv::ParametersUpdate::Request> request,
+                                    const std::shared_ptr<seasource_audio::srv::ParametersUpdate::Response> response);
+
+    void sync_timer_start();
 };
 
 #endif //BUILD_SEASOURCE_AUDIO_NODE_H
