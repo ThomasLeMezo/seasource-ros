@@ -17,3 +17,5 @@ udevadm monitor --property --udev
 udevadm info --attribute-walk --name=/dev/ttyUSB0
 ```
 
+
+

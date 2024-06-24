@@ -37,7 +37,7 @@ def generate_launch_description():
         executable='xbee',
         namespace='driver',
         name='xbee_node',
-        respawn=True,
+        respawn=False,
         parameters=parameters_file_list
     )
     list_node.append(xbee_node)

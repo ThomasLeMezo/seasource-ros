@@ -11,10 +11,10 @@ Requires=network-online.target
 
 [Service]
 #ExecStartPre=/bin/sleep 15
-User=pi
-Group=pi
+User=source
+Group=source
 UMask=022
-ExecStart=/bin/zsh -c "source /home/pi/seasource-ros/install/seasource/share/seasource/linux/source-ros.sh && ros2 launch seasource seasource_launch.py"
+ExecStart=/bin/zsh -c "source /home/source/seasource-ros/install/seasource/share/seasource/linux/source-ros.sh && ros2 launch seasource seasource_launch.py"
 TimeoutStopSec=5
 
 [Install]
