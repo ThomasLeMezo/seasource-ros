@@ -41,11 +41,11 @@ def save_wave(filename, wave_data, sample_rate=192000, export_folder='../data'):
 
 def main():
     # export folder for the generated audio files
-    export_folder = '../data'
+    export_folder = '/home/source/audio'
 
     sample_rate = 192000
     # Amplitude of the wave (32-bit signed integer)
-    amplitude = 2**32 // 2 - 1
+    amplitude = 480761704
 
     # Sine wave parameters
     frequency = 440.0  # Frequency in Hz (e.g., A4 note)

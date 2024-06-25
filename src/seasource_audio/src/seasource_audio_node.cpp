@@ -60,11 +60,11 @@ void SeasourceAudioNode::sync_timer_start() {
 }
 
 void SeasourceAudioNode::load_audio_files(){
-    auto exePath = filesystem::canonical("/proc/self/exe");
-
-    path_data_audio_ = std::filesystem::absolute(
-            exePath.parent_path().append("data/"))
-            .string();
+//    auto exePath = filesystem::canonical("/home/source/");
+//
+//    path_data_audio_ = std::filesystem::absolute(
+//            exePath.parent_path().append("audio/"))
+//            .string();
 
     RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] path_data_audio_: %s", path_data_audio_.c_str());
 
@@ -100,13 +100,21 @@ void SeasourceAudioNode::init_parameters() {
     this->declare_parameter<long>("sound_phase_shift_from_posix", sound_phase_shift_from_posix_.count());
     sound_phase_shift_from_posix_ = std::chrono::milliseconds(this->get_parameter_or("sound_phase_shift_from_posix", sound_phase_shift_from_posix_.count()));
 
+    this->declare_parameter<std::string>("audio_path", path_data_audio_);
+    path_data_audio_ = this->get_parameter_or("audio_path", path_data_audio_);
+
+    this->declare_parameter<int>("source_level", source_level_);
+    source_level_ = this->get_parameter_or("source_level", source_level_);
+
+    // Create path if not exist
+    if (!filesystem::exists(path_data_audio_)) {
+        RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] directory to create %s", path_data_audio_.c_str());
+        filesystem::create_directories(path_data_audio_);
+    }
+
     // Verify that sound_phase_shift_from_posix is less than sound_duration_between_play
     if (sound_phase_shift_from_posix_ >= sound_duration_between_play_ && sound_duration_between_play_.count() > 0) {
         RCLCPP_ERROR(this->get_logger(), "[seasource_audio_node] sound_phase_shift_from_posix must be less than sound_duration_between_play");
-    }
-
-    if(sound_duration_between_play_.count() == 0){
-        enable_play_ = false;
     }
 
     size_t audio_file_id = audio_file_id_default_;
@@ -155,7 +163,7 @@ void SeasourceAudioNode::init_SDL(){
     string command = "amixer -D pulse sset Master unmute";
     system(command.c_str());
 
-    command = "amixer -D pulse sset Master 20%";
+    command = "amixer -D pulse sset Master " + std::to_string(source_level_) + "%";
     system(command.c_str());
 
     RCLCPP_INFO(this->get_logger(), "[seasource_audio_node] init_SDL done");
@@ -194,6 +202,10 @@ void SeasourceAudioNode::load_music() {
         if (!music_[index]) {
             RCLCPP_ERROR(this->get_logger(), "[seasource_audio_node] Mix_LoadWAV: %s", Mix_GetError());
         }
+    }
+
+    if(sound_duration_between_play_.count() != 0){
+        enable_play_ = true;
     }
 }
 
@@ -257,7 +269,7 @@ void SeasourceAudioNode::callback_parameters_update(
         const std::shared_ptr<seasource_audio::srv::ParametersUpdate::Response> response) {
     (void)request_header;
 
-    if(request->sound_duration_between_play > 0){
+    if(request->sound_duration_between_play > 0 && music_.size() > 0){
         sound_duration_between_play_ = std::chrono::milliseconds(request->sound_duration_between_play);
         enable_play_ = true;
     }

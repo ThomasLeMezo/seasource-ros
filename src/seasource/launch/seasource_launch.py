@@ -11,6 +11,8 @@ def generate_launch_description():
     hostname = socket.gethostname()
     parameters_file_list = []
 
+    #parameters_file_list = [{"audio_path": home_path + "/audio/"}]
+
     config_seasource = os.path.join(
         home_path,
         'config/default/',  # Directory where yaml are

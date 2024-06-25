@@ -52,11 +52,13 @@ public:
     std::vector<Mix_Chunk*> music_; // The music file to play
     bool music_loaded_ = false;
 
-    std::string path_data_audio_ = "";
+    std::string path_data_audio_ = "/home/source/audio/";
     std::vector<std::string> audio_files_;
 
     size_t current_audio_file_ = 0;
     size_t audio_file_id_default_ = 1;
+
+    int source_level_ = 20;
 
     enum class AudioMode {
         SINGLE_FILE=1,
@@ -64,7 +66,7 @@ public:
     };
     AudioMode audio_mode_ = AudioMode::SINGLE_FILE;
 
-    bool enable_play_ = true;
+    bool enable_play_ = false;
 
     /// Interfaces
     rclcpp::Publisher<seasource_audio::msg::LogAudioSource>::SharedPtr publisher_log_audio_source_;

@@ -8,7 +8,8 @@ xbee_node:
 
 seasource_audio_node:
   ros__parameters:
-    audio_file_id: 0 # If 0, play all audio files sequentially
+    audio_file_id: 1 # If 0, play all audio files sequentially
     sound_duration_between_play: 10000 #ms
     sound_phase_shift_from_posix: 0 #ms
+    source_level: 100
 
