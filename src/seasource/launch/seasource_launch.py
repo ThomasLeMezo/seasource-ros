@@ -63,5 +63,6 @@ def generate_launch_description():
         respawn=True,
         parameters=parameters_file_list
     )
+    list_node.append(bag_recorder)
 
     return LaunchDescription(list_node)

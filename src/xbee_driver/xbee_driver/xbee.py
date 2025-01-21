@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from digi.xbee.devices import *
 import socket
+import math
 
 from seasource_audio.srv import FileSelection
 from seasource_audio.srv import ParametersUpdate
@@ -17,6 +18,9 @@ class XbeeNode(Node):
         self.subscription_gnss_data = None
         self.client_file_selection = None
         self.client_parameters_update = None
+
+        self.fix_latitude = 0.
+        self.fix_longitude = 0.
 
         # Get hostname of device
         self.hostname = socket.gethostname()
@@ -114,10 +118,12 @@ class XbeeNode(Node):
 
     def gpsd_callback(self, msg):
         self.valid_fix = msg.mode > GpsFix.MODE_NO_FIX
-        self.fix_latitude = msg.latitude
-        self.fix_longitude = msg.longitude
+        # if not NaN, use the value
+        self.fix_latitude = msg.latitude if not math.isnan(msg.latitude) else 0.
+        self.fix_longitude = msg.longitude if not math.isnan(msg.longitude) else 0.
 
     def timer_callback(self):
+
         # Send data to xbee : lat long fix as two integers
         lat = int(self.fix_latitude*1e5)
         lon = int(self.fix_longitude*1e5)
